@@ -2,10 +2,12 @@
 import sys
 import os
 import shutil
+import _thread
 from typing import List
 
 DOWNLOAD_LOCK_FILE = "downloaded.lock"
 URL = "https://www.youtube.com/playlist?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM"
+THREADS = 30
 
 
 def download_all():
@@ -40,15 +42,19 @@ def get_missing_vids() -> List[str]:
 
 
 def main() -> bool:
-    # os.mkdir("lofi")
+    os.mkdir("lofi")
     os.chdir("lofi")
-    # os.mkdir("raw")
+    os.mkdir("raw")
     os.chdir("raw")
+
+    # shutil.move(f"../{DOWNLOAD_LOCK_FILE}", DOWNLOAD_LOCK_FILE)
 
     # third time's the charm
     for i in range(3):
         print(f"download attempt #{i+1}: ...")
         download_all()
+        # for _ in range(THREADS):
+        #     _thread.start_new_thread(download_all, ())
     shutil.move(DOWNLOAD_LOCK_FILE, f"../{DOWNLOAD_LOCK_FILE}")
 
     # check if all files have been downloaded

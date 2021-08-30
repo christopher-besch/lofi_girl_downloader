@@ -2,7 +2,7 @@
 import sys
 import os
 import shutil
-import _thread
+from argparse import ArgumentParser
 from typing import List
 
 DOWNLOAD_LOCK_FILE = "downloaded.lock"
@@ -30,7 +30,6 @@ def get_missing_vids() -> List[str]:
     files = os.listdir()
     files.sort()
     for file in files:
-        print(file)
         file_id = int(file.split("-")[0])
         while True:
             last_id += 1
@@ -41,20 +40,70 @@ def get_missing_vids() -> List[str]:
     return missing_vids
 
 
+def sort_folder():
+    print("sorting music in folders: ...")
+    files = os.listdir()
+    files.sort()
+    for file in files:
+        print(file)
+        # remove id
+        parts = file.split("-")
+        file_id = parts[0]
+        interpret = parts[1]
+
+        interpret = interpret.lower()
+        interpret = interpret.replace("’", "'")
+        interpret = interpret.replace("0", "")
+        interpret = interpret.replace("1", "")
+        interpret = interpret.replace("2", "")
+        interpret = interpret.replace("3", "")
+        interpret = interpret.replace("4", "")
+        interpret = interpret.replace("5", "")
+        interpret = interpret.replace("6", "")
+        interpret = interpret.replace("7", "")
+        interpret = interpret.replace("8", "")
+        interpret = interpret.replace("9", "")
+
+        main_interpret = interpret.split("_x_")[0].strip("_")
+
+        new_file_name = "-".join(parts[1:])
+
+        if not os.path.exists(main_interpret):
+            os.mkdir(main_interpret)
+        print(f"{file} -> {main_interpret}/{new_file_name}")
+        shutil.move(file, f"{main_interpret}/{new_file_name}")
+
+
 def main() -> bool:
-    os.mkdir("lofi")
+    parser = ArgumentParser(
+        description="Download entire Music Database of Lofi Girl")
+    parser.add_argument(
+        "-f", "--force", help="use already existent lofi folder", action="store_true")
+    args = parser.parse_args()
+
+    # create folder structure
+    if not os.path.exists("lofi"):
+        os.mkdir("lofi")
+    else:
+        if args.force:
+            print("using already existent lofi folder")
+        else:
+            print("lofi folder already exists; use --force to use it")
+            return False
     os.chdir("lofi")
-    os.mkdir("raw")
+    if not os.path.exists("raw"):
+        os.mkdir("raw")
     os.chdir("raw")
 
-    # shutil.move(f"../{DOWNLOAD_LOCK_FILE}", DOWNLOAD_LOCK_FILE)
+    if os.path.exists(f"../{DOWNLOAD_LOCK_FILE}"):
+        print("copying existent lock file")
+        shutil.move(f"../{DOWNLOAD_LOCK_FILE}", DOWNLOAD_LOCK_FILE)
 
     # third time's the charm
-    for i in range(3):
+    # for i in range(3):
+    for i in range(0):
         print(f"download attempt #{i+1}: ...")
         download_all()
-        # for _ in range(THREADS):
-        #     _thread.start_new_thread(download_all, ())
     shutil.move(DOWNLOAD_LOCK_FILE, f"../{DOWNLOAD_LOCK_FILE}")
 
     # check if all files have been downloaded
@@ -69,11 +118,18 @@ def main() -> bool:
             raise ValueError(
                 f"These Videos failed to download twice: {', '.join(missing_vids)}")
 
+    # detoxing
     os.chdir("..")
-    shutil.copytree("raw", "detoxed")
-    print("detoxing files: ...")
-    os.chdir("detoxed")
-    os.system("detox .")
+    if not os.path.exists("detoxed"):
+        print("copying files for detoxification: ...")
+        shutil.copytree("raw", "detoxed")
+        print("detoxing files: ...")
+        os.chdir("detoxed")
+        os.system("detox .")
+    else:
+        print("detoxed folder already found, delete it to redo detoxification")
+        os.chdir("detoxed")
+    sort_folder()
 
     return True
 

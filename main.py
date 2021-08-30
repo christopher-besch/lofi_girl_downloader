@@ -7,7 +7,10 @@ from typing import List
 
 DOWNLOAD_LOCK_FILE = "downloaded.lock"
 URL = "https://www.youtube.com/playlist?list=PLofht4PTcKYnaH8w5olJCI-wUVxuoMHqM"
-THREADS = 30
+
+REPLACEMENTS = {
+    "mell": "mell_o"
+}
 
 
 def download_all():
@@ -65,6 +68,8 @@ def sort_folder():
         interpret = interpret.replace("9", "")
 
         main_interpret = interpret.split("_x_")[0].strip("_")
+        if main_interpret in REPLACEMENTS:
+            main_interpret = REPLACEMENTS[main_interpret]
 
         new_file_name = "-".join(parts[1:])
 
@@ -79,6 +84,8 @@ def main() -> bool:
         description="Download entire Music Database of Lofi Girl")
     parser.add_argument(
         "-f", "--force", help="use already existent lofi folder", action="store_true")
+    parser.add_argument(
+        "-s", "--skip", help="skip initial download", action="store_true")
     args = parser.parse_args()
 
     # create folder structure
@@ -99,12 +106,13 @@ def main() -> bool:
         print("copying existent lock file")
         shutil.move(f"../{DOWNLOAD_LOCK_FILE}", DOWNLOAD_LOCK_FILE)
 
-    # third time's the charm
-    # for i in range(3):
-    for i in range(0):
-        print(f"download attempt #{i+1}: ...")
-        download_all()
-    shutil.move(DOWNLOAD_LOCK_FILE, f"../{DOWNLOAD_LOCK_FILE}")
+    if not args.skip:
+        # third time's the charm
+        for i in range(3):
+            print(f"download attempt #{i+1}: ...")
+            download_all()
+    if os.path.exists(DOWNLOAD_LOCK_FILE):
+        shutil.move(DOWNLOAD_LOCK_FILE, f"../{DOWNLOAD_LOCK_FILE}")
 
     # check if all files have been downloaded
     missing_vids = get_missing_vids()
